@@ -27,5 +27,14 @@ def load_transparent_asset(filename, size, fallback_color):
     if os.path.exists(filename):
         img = pygame.image.load(filename).convert_alpha()
         return pygame.transform.smoothscale(img, size)
+    surf = pygame.Surface(size, pygame.SRCALPHA)
+    pygame.draw.rect(surf, fallback_color, (0, 0, size[0], size[1],), border_radius=12)
+    return surf
+cliff_img = load_transparent_asset("cliff.png", (320, 560), (95, 85, 80, 255))
+player_img = load_transparent_asset("sprite.png", (64, 64), (255, 210, 80, 255))
+def compute_contraption_stats(strokes):
+    all_points = [pt for stroke in strokes for pt in stroke]
+    if len(all_points) < 2:
+        return 0.0, 0.0, 1.0
     
 
