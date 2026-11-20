@@ -25,5 +25,7 @@ DROP_START_Y = 150
 
 def load_transparent_asset(filename, size, fallback_color):
     if os.path.exists(filename):
-        
+        img = pygame.image.load(filename).convert_alpha()
+        return pygame.transform.smoothscale(img, size)
+    
 
