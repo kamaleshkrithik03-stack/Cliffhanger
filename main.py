@@ -36,5 +36,10 @@ def compute_contraption_stats(strokes):
     all_points = [pt for stroke in strokes for pt in stroke]
     if len(all_points) < 2:
         return 0.0, 0.0, 1.0
+    xs = [p[0] for p in all_points]
+    ys = [p[1] for p in all_points]
+    span_x = max(xs) - min(xs)
+    span_y = max(ys) - min(ys)
+    
     
 
