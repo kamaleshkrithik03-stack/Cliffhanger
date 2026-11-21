@@ -63,11 +63,62 @@ class Game:
         self.player_y = float(DROP_START_Y)
         self.vy = 0.0
         self.strokes = []
-        self.current_strokes = []
+        self.current_stroke = []
         self.is_drawing = False
         self.survived = False
         self.impact_speed = 0
         self.safe_limit = cfg["max_safe_vy"]
-    def 
+    def start_drop(self):
+        self.state = "DROP"
+        self.is_drawing = False
+        if self.current_stroke:
+            self.strokes.append(self.current_stroke)
+            self.current_stroke = []
+        self.drag, cushion, self.mass = compute_contraption_stats(self.strokes)
+        self.safe_limit = LEVELS[self.level_idx]["max_safe_vy"] + cushion
+game = Game()
+running = True
+while running:
+    dt = clock.tick(60) / 1000
+    cfg = LEVELS[game.level_idx]
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE and game.state == "DRAW":
+                game.start_drop()
+            elif event.key == pygame.K_c and game.state == "DRAW":
+                game.strokes.clear()
+                game.current_stroke.clear()
+            elif event.key == pygame.K_r:
+                game.reset_level()
+            elif event.key == pygame.K_RETURN and game.state == "RESULT":
+                if game.survived:
+                    game.level_idx = (game.level_idx + 1) % len(LEVELS)
+                game.reset_level()
+        elif game.state == "DRAW":
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1: #finally on to the MOUSE stuff always my fav
+                game.is_drawing = True
+                rel_pt = (event.pos[0] - game.player_x, event.pos[1] - game.player_y)
+                game.current_stroke = [rel_pt]
+            elif event.type == pygame.MOUSEMOTION and game.is_drawing:
+                rel_pt = (event.pos[0] - game.player_x, event.pos[1] - game.player_y)
+                if math.hypot(rel_pt[0], rel_pt[1]) <= 160:
+                    game.current_stroke.append(rel_pt)
+            elif event.type == pygame.MOUSEBUTTONUP and event.button == 2 and game.is_drawing:
+                game.is_drawing = False
+                if len(game.current_stroke) > 1:
+                    game.strokes.append(game.current_stroke)
+                game.current_stroke = []
+    if game.state == "DRAW":
+        game.time_left -= dt
+        if game.time_left <= 0:
+            game.time_left = 0
+            game.start_drop()
+    elif game.state == "DROP":
+        accel = (cfg["gravity"] * game.mass) - (game.drag * (game.vy ** 2))
+        game.vy += accel * dt
+        
+
     
 
