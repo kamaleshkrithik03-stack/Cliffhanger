@@ -31,7 +31,7 @@ def load_transparent_asset(filename, size, fallback_color):
     pygame.draw.rect(surf, fallback_color, (0, 0, size[0], size[1],), border_radius=12)
     return surf
 cliff_img = load_transparent_asset("cliff.png", (320, 560), (95, 85, 80, 255))
-player_img = load_transparent_asset("sprite.png", (64, 64), (255, 210, 80, 255))
+player_img = load_transparent_asset("sprite.jpeg", (64, 64), (255, 210, 80, 255))
 def compute_contraption_stats(strokes):
     all_points = [pt for stroke in strokes for pt in stroke]
     if len(all_points) < 2:
@@ -95,7 +95,46 @@ class RigPhysics:
                 )
                 self.links.append((i, i + 1, rest)) #now i learned the double brackets thing
     def step(self, dt, game, cfg):
-        
+        rho = cfg["fluid_rho"]
+        wind_x = cfg["wind_x"]
+        rel_vx = game.vx - wind_x
+        rel_vy = game.vy
+        speed = math.hypot(rel_vx, rel_vy)
+        drag_mag = game.drag_coeff * rho * game.area_factor * speed + 0.35 * rho
+        fx_drag = -drag_mag * rel_vx
+        fy_drag = -drag_mag * rel_vy
+        ax = fx_drag / game.mass_factor
+        ay = (cfg["gravity"] * game.mass_factor) + (fy_drag / game.mass_factor)
+        game.vx += ax * dt
+        game.vy += ay * dt
+        game.player_x += game.vx * dt
+        game.player_y += game.vy * dt
+        if game.player_x < 40:
+            game.player_x = 40
+            game.vx = max(0, game.vx)
+        elif game.player_x > WIDTH - 40:
+            game.player_x = WIDTH - 40
+            game.vx = min(0, game.vx)
+        stiffness = 140
+        damping = 10
+        for node in self.nodes:
+            n_rel_vx = node.vx - wind_x
+            n_rel_vy = node.vy
+            n_speed = math.hypot(n_rel_vx, n_rel_vy)
+            n_drag = 0.0012 * rho * n_speed + 0.45 * rho
+            target_x = game.player_x + node.ox
+            target_y = game.player_y + node.oy
+            n_ax = stiffness * (target_x - node.x) - damping * node.vx - n_drag * n_rel_vx
+            n_ay = cfg["gravity"] * 0.85 + stiffness * (target_y - node.y) - damping * node.vy - n_drag * n_rel_vy # yeah ai copy pasted
+            node.vx += n_ax * dt
+            node.vy += n_ay * dt
+            node.x += node.vx * dt
+            node.y += node.vy * dt
+            if node.y > GROUND_Y:
+                node.y = GROUND_Y
+                node.vy *= -0.25
+                node.vx *= 0.8
+        for _ in range(3):
 
 class Game:
     def __init__(self):
