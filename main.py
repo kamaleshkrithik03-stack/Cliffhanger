@@ -118,6 +118,7 @@ while running:
     elif game.state == "DROP":
         accel = (cfg["gravity"] * game.mass) - (game.drag * (game.vy ** 2))
         game.vy += accel * dt
+        game.player_y += game.vy * dt
         
 
     
