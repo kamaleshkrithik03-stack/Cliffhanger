@@ -35,7 +35,7 @@ player_img = load_transparent_asset("sprite.png", (64, 64), (255, 210, 80, 255))
 def compute_contraption_stats(strokes):
     all_points = [pt for stroke in strokes for pt in stroke]
     if len(all_points) < 2:
-        return 0.0, 0.0, 1.0
+        return 0.0, 0.0, 1.0, 0
     xs = [p[0] for p in all_points]
     ys = [p[1] for p in all_points]
     span_x = max(xs) - min(xs)
@@ -47,10 +47,56 @@ def compute_contraption_stats(strokes):
             dy = stroke[i][1] - stroke[i - 1][1]
             total_length += math.hypot(dx, dy)#as usual we see pythagoras
 
-    drag_factor = min(0.0045, (span_x * 0.000018))
+    
     cushion_bonus = min(220.0, total_length * 0.18 + (span_y * 0.25))
+    drag_coeff = min(0.0065, span_x * 0.000024 + total_length * 0.000003) # copy pasted cuz idk this formula but it is drag coeficient
+    area_factor = min(3.5, 0.5 + span_x / 90 + total_length / 500)
     mass_factor = 1.0 + min(0.35, total_length * 0.00015)
-    return drag_factor, cushion_bonus, mass_factor
+    return drag_coeff, cushion_bonus, mass_factor, area_factor
+class PhysicsNode: #new word node unlocked from godot
+    def __init__(self, ox, oy, px, py):
+        self.ox = ox
+        self.oy = oy
+        self.x = px + ox
+        self.y = py + oy
+        self.vx = 0
+        self.vy = 0
+class RigPhysics:
+    def __init__(self):
+        self.nodes = []
+        self.links = []
+    def build_from_strokes(self, strokes, px, py):
+        self.nodes.clear()
+        self.links.clear()
+        step_spacing = 14
+        for stroke in strokes:
+            if len(stroke) < 2:
+                continue
+            sampled = [stroke[0]]
+            accum = 0
+            for i in range(1, len(stroke)):
+                x0, y0 = sampled[-1]
+                x1, y1 = stroke[i]
+                seg_len = math.hypot(x1 - x0, y1 - y0) #math vibes fr
+                if seg_len + accum >= step_spacing:
+                    sampled.append((x1, y1))
+                    accum = 0
+                else:
+                    accum += seg_len
+            if sampled[-1] != stroke[-1]:
+                sampled.append(stroke[-1])
+            start_idx = len(self.nodes)
+            for ox, oy in sampled:
+                self.nodes.append(PhysicsNode(ox, oy, px, py))
+            for i in range(start_idx, len(self.nodes) - 1):
+                rest = math.hypot(
+                    self.nodes[i + 1].ox - self.nodes[i].ox,
+                    self.nodes[i + 1].oy - self.nodes[i].oy,
+                )
+                self.links.append((i, i + 1, rest)) #now i learned the double brackets thing
+    def step(self, dt, game, cfg):
+        
+
 class Game:
     def __init__(self):
         self.level_idx = 0
@@ -105,7 +151,7 @@ while running:
                 rel_pt = (event.pos[0] - game.player_x, event.pos[1] - game.player_y)
                 if math.hypot(rel_pt[0], rel_pt[1]) <= 160:
                     game.current_stroke.append(rel_pt)
-            elif event.type == pygame.MOUSEBUTTONUP and event.button == 2 and game.is_drawing:
+            elif event.type == pygame.MOUSEBUTTONUP and event.button == 1 and game.is_drawing:
                 game.is_drawing = False
                 if len(game.current_stroke) > 1:
                     game.strokes.append(game.current_stroke)
