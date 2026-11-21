@@ -119,7 +119,43 @@ while running:
         accel = (cfg["gravity"] * game.mass) - (game.drag * (game.vy ** 2))
         game.vy += accel * dt
         game.player_y += game.vy * dt
-        
+        if game.player_y + 32 >= GROUND_Y:
+            game.player_y = GROUND_Y - 32
+            game.impact_speed = game.vy
+            game.survived = game.impact_speed <= game.safe_limit
+            game.state = "RESULT"
+    screen.fill((135, 200, 235)) #the best colour choice ig
+    pygame.draw.rect(screen, (65, 150, 75), (0, GROUND_Y, WIDTH, HEIGHT - GROUND_Y))
+    screen.blit(cliff_img, (0, GROUND_Y - cliff_img.get_height()))
+    if game.state == "DRAW":
+        pygame.draw.circle(
+            screen, (255, 255, 255), (int(game.player_x), int(game.player_y)), 160, 2
+        )
+    sprite_rect = player_img.get_rect(center=(int(game.player_x), int(game.player_y)))
+    screen.blit(player_img, sprite_rect)
+    all_visible_strokes = game.strokes + ([game.current_stroke] if game.current_stroke else [])
+    for stroke in all_visible_strokes:
+        if len(stroke) > 1:
+            world_pts = [(game.player_x + dx, game.player_y + dy) for dx, dy in stroke]
+            pygame.draw.lines(screen, (30, 30, 35), False, world_pts, 5)
+    lvl_txt = FONT_MED.render(f"level {cfg['level']} / {len(LEVELS)}", True, (20, 20, 20))
+    screen.blit(lvl_txt, (20, 15))
+    if game.state == "DRAW":
+        timer_color = (200, 30, 30) if game.time_left <= 3 else (20, 20, 20)
+        timer_txt = FONT_BIG.render(f"go ahead and DRAW! {game.time_left:.1f}s", True, timer_color)
+        hint_txt = FONT_SMALL.render("drag mouse inside the ring to build you contraption and[space] for drop", True, (20, 20, 20))
+        screen.blit(timer_txt, (WIDTH // 2 - timer_txt.get_width() // 2, 15))
+        screen.blit(hint_txt, (WIDTH // 2 - hint_txt.get_width() // 2, 65))
+    elif game.state == "DROP":
+        spd_txt = FONT_MED.render(f"fall speed: {int(game.vy)} px/s (Safe <= {int(game.safe_limit)})", True, (20, 20, 20))
+        screen.blit(spd_txt, (WIDTH // 2 - spd_txt.get_width() // 2, 20))
+    elif game.state == "RESULT":
+        status = "survived!" if game.survived else "splat! womp womp"
+        color = (20, 140, 40) if game.survived else (200, 30, 30)
+        res_txt = FONT_BIG.render(status, True, color)
+        detail_txt = FONT_MED.render(
+            
+        )
 
     
 
