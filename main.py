@@ -154,8 +154,16 @@ while running:
         color = (20, 140, 40) if game.survived else (200, 30, 30)
         res_txt = FONT_BIG.render(status, True, color)
         detail_txt = FONT_MED.render(
-            
+            f"impact: {int(game.impact_speed)} px/s |    safelimit: {int(game.safe_limit)} px/s",
+            True,
+            (20, 20, 20),
         )
+        next_instruction = "press [enter] for next level " if game.survived else "press r to retry"
+        instruction_txt = FONT_SMALL.render(next_instruction, True, (20, 20, 20))
+        screen.blit(res_txt, (WIDTH // 2 - res_txt.get_width() // 2, 180))
+        screen.blit(detail_txt, (WIDTH // 2 - detail_txt.get_width() // 2, 235))
+        screen.blit(instruction_txt, (WIDTH // 2 - instruction_txt.get_width() // 2, 275)) #ok im writing instruction as prompt as thats the lalternative ugghh dont ask why i chose instruction over prompt
+    pygame.display.flip()
+pygame.quit()
 
-    
 
