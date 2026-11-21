@@ -40,6 +40,34 @@ def compute_contraption_stats(strokes):
     ys = [p[1] for p in all_points]
     span_x = max(xs) - min(xs)
     span_y = max(ys) - min(ys)
-    
+    total_length = 0.0
+    for stroke in strokes:
+        for i in range(1, len(stroke)):
+            dx = stroke[i][0] - stroke[i - 1][0]
+            dy = stroke[i][1] - stroke[i - 1][1]
+            total_length += math.hypot(dx, dy)#as usual we see pythagoras
+
+    drag_factor = min(0.0045, (span_x * 0.000018))
+    cushion_bonus = min(220.0, total_length * 0.18 + (span_y * 0.25))
+    mass_factor = 1.0 + min(0.35, total_length * 0.00015)
+    return drag_factor, cushion_bonus, mass_factor
+class Game:
+    def __init__(self):
+        self.level_idx = 0
+        self.reset_level()
+    def reset_level(self):
+        cfg = LEVELS[self.level_idx]
+        self.state = "DRAW"
+        self.time_left = cfg["time"]
+        self.player_x = float(DROP_START_X)
+        self.player_y = float(DROP_START_Y)
+        self.vy = 0.0
+        self.strokes = []
+        self.current_strokes = []
+        self.is_drawing = False
+        self.survived = False
+        self.impact_speed = 0
+        self.safe_limit = cfg["max_safe_vy"]
+    def 
     
 
