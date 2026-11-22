@@ -1,7 +1,7 @@
 import os
 import pygame
 import math
-import random #these imports are in the back of my hand rn im so use to itEdit is that imma go use it for clouds ya
+import random #these imports are in the back of my hand rn im so used to it
 import sys
 
 pygame.init()
@@ -32,6 +32,21 @@ def load_transparent_asset(filename, size, fallback_color):
     return surf
 cliff_img = load_transparent_asset("cliff.png", (320, 560), (95, 85, 80, 255))
 player_img = load_transparent_asset("sprite.jpeg", (64, 64), (255, 210, 80, 255))
+cloud_base_img = pygame.image.load("cloud.png").convert_alpha() if os.path.exists("cloud.png") else None #i included that os.path exists so that i can make clouds even if there isnt any file (include that in next lines) also i can finally put random to use
+def make_random_cloud(scale):
+    w = int(140 * scale)
+    h = int(60 * scale)
+    if cloud_base_img:
+        return pygame.transform.smoothscale(cloud_base_img, (w, h))
+    surf = pygame.Surface((w, h), pygame.SRCALPHA)
+    puffs = random.randint(3, 6) #puffs is a fun name and finally rand
+    for _ in range(puffs): 
+        px = random.randint(int(w * 0.15), int(w * 0.85))
+        py = random.randint(int(h * 0.25), int(h * 0.75))
+        rad = random.randint(int(h * 0.25), int(h * 0.48))
+        pygame.draw.circle(surf, (255, 255, 255, random.randint(190, 245)), (px, py), rad)
+    return surf
+
 def compute_contraption_stats(strokes):
     all_points = [pt for stroke in strokes for pt in stroke]
     if len(all_points) < 2:
