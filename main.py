@@ -15,9 +15,9 @@ FONT_MED = pygame.font.SysFont("comicsansms", 25, bold=True) #maybe idk ill see 
 FONT_SMALL = pygame.font.SysFont("comicsansms", 18) #not bold as small
 
 LEVELS = [
-    {"level": 1, "time": 10, "gravity": 800, "max_safe_vy": 200, "fluid_rho": 1, "wind_x": 0, "cliff_height": 340, "drop_y": 240}, # ok so basically what ive done here is my idea is that the char/sprite will be floating in air in a cliff and as levels goes up u can see the time(most hardest) decreases
-    {"level": 2, "time": 8, "gravity": 1000, "max_safe_vy": 150, "fluid_rho": 1.15, "wind_x": 35, "cliff_height": 460, "drop_y": 180}, # copy pasted from last line 
-    {"level": 3, "time": 5, "gravity": 1200, "max_safe_vy": 100, "fluid_rho": 1.3, "wind_x": -55, "cliff_height": 580, "drop_y": 100}, 
+    {"level": 1, "time": 8, "gravity": 800, "max_safe_vy": 200, "fluid_rho": 1, "wind_x": 0, "cliff_height": 300, "drop_y": 240}, # ok so basically what ive done here is my idea is that the char/sprite will be floating in air in a cliff and as levels goes up u can see the time(most hardest) decreases
+    {"level": 2, "time": 5, "gravity": 1000, "max_safe_vy": 150, "fluid_rho": 1.15, "wind_x": 35, "cliff_height": 600, "drop_y": 180}, # copy pasted from last line 
+    {"level": 3, "time": 2, "gravity": 1200, "max_safe_vy": 100, "fluid_rho": 1.3, "wind_x": -55, "cliff_height": 900, "drop_y": 100}, 
 ] 
 GROUND_Y = HEIGHT - 60
 DROP_START_X = 640 #ugghh ofc i have to use pycase not snakecase its of i have to have caps lock on evry timr
@@ -53,7 +53,7 @@ def spawn_clouds(count=7):
         clouds.append({
             "surf": make_random_cloud(scale),
             "x":  float(random.randint(-120, WIDTH + 120)),
-            "y": float(random.randint(250, 410)),
+            "y": float(random.randint(200, 340)),
             "speed": random.uniform(12, 35) * random.choice([-1, 1]),
         }) 
     return clouds
@@ -176,6 +176,7 @@ class Game:
     def __init__(self):
         self.level_idx = 0
         self.rig = RigPhysics()
+        self.cam_y = 0
         self.reset_level()
     def reset_level(self):
         cfg = LEVELS[self.level_idx]
@@ -196,6 +197,12 @@ class Game:
         self.area_factor = 1
         self.rig.nodes.clear()
         self.rig.links.clear()
+        self.cam_y = max(0, self.player_y - 220)
+    def update_camera(self, dt):
+        desired_cam_y = max(0, min(self.player_y - 220, GROUND_Y - HEIGHT + 140)) #140 seems k ig
+        if self.state == "DRAW":
+            desired_cam_y = max(0, self.player_y - 220)
+        self.cam_y += (desired_cam_y - self.cam_y) * min(1, dt * 6)
     def start_drop(self):
         self.state = "DROP"
         self.is_drawing = False
@@ -263,6 +270,8 @@ while running:
             game.impact_speed = math.hypot(game.vx, game.vy)
             game.survived = game.impact_speed <= game.safe_limit
             game.state = "RESULT"
+    game.update_camera(dt)
+    cam_y = game.cam_y
     for c in clouds:
         c["x"] += (c["speed"] + cfg["wind_x"] * 0.4) * dt
         cw = c["surf"].get_width()
@@ -272,7 +281,9 @@ while running:
             c["x"] = WIDTH + cw
     screen.fill((135, 200, 235)) #the best colour choice ig for a sky
     for c in clouds:
-        screen.blit(c["surf"], (int(c["x"]), int(c["y"])))
+        screen.blit(c["surf"], (int(c["x"]), int(c["y"] - cam_y * 0.35)))
+    ground_screen_y = int(GROUND_Y - cam_y)
+    
     pygame.draw.rect(screen, (65, 150, 75), (0, GROUND_Y, WIDTH, HEIGHT - GROUND_Y))
     cliff_scale = cfg["cliff_height"] / cliff_img.get_height()
     cliff_w = int(cliff_img.get_width() * cliff_scale)
