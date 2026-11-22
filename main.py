@@ -256,7 +256,7 @@ while running:
         for i, j, _ in game.rig.links:
             na, nb = game.rig.nodes[i], game.rig.nodes[j]
             pygame.draw.line(screen, (30, 30, 35), (na.x, na.y), (nb.x, nb.y), 5)
-    lvl_txt = FONT_MED.render(f"level {cfg['level']} / {len(LEVELS)}", True, (20, 20, 20))
+    lvl_txt = FONT_MED.render(f"level {cfg['level']} / {len(LEVELS)} | wind: {cfg['wind_x']:+.0f}", True, (20, 20, 20))
     screen.blit(lvl_txt, (20, 15))
     if game.state == "DRAW":
         timer_color = (200, 30, 30) if game.time_left <= 3 else (20, 20, 20)
@@ -265,7 +265,7 @@ while running:
         screen.blit(timer_txt, (WIDTH // 2 - timer_txt.get_width() // 2, 15))
         screen.blit(hint_txt, (WIDTH // 2 - hint_txt.get_width() // 2, 65))
     elif game.state == "DROP":
-        spd_txt = FONT_MED.render(f"fall speed: {int(game.vy)} px/s (Safe <= {int(game.safe_limit)})", True, (20, 20, 20))
+        spd_txt = FONT_MED.render(f"fall speed: {int(math.hypot(game.vx, game.vy))} px/s (Safe <= {int(game.safe_limit)})", True, (20, 20, 20))
         screen.blit(spd_txt, (WIDTH // 2 - spd_txt.get_width() // 2, 20))
     elif game.state == "RESULT":
         status = "survived!" if game.survived else "splat! womp womp"
