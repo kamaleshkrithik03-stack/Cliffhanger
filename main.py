@@ -15,12 +15,12 @@ FONT_MED = pygame.font.SysFont("comicsansms", 25, bold=True) #maybe idk ill see 
 FONT_SMALL = pygame.font.SysFont("comicsansms", 18) #not bold as small
 
 LEVELS = [
-    {"level": 1, "time": 10, "gravity": 500, "max_safe_vy": 420, "fluid_rho": 1, "wind_x": 0, "cliff_height": 340, "drop_y": 240}, # ok so basically what ive done here is my idea is that the char/sprite will be floating in air in a cliff and as levels goes up u can see the time(most hardest) decreases
-    {"level": 2, "time": 8, "gravity": 650, "max_safe_vy": 380, "fluid_rho": 1.15, "wind_x": 35, "cliff_height": 460, "drop_y": 180}, # copy pasted from last line 
-    {"level": 3, "time": 5, "gravity": 750, "max_safe_vy": 340, "fluid_rho": 1.3, "wind_x": -55, "cliff_height": 580, "drop_y": 100}, 
+    {"level": 1, "time": 10, "gravity": 800, "max_safe_vy": 420, "fluid_rho": 1, "wind_x": 0, "cliff_height": 340, "drop_y": 240}, # ok so basically what ive done here is my idea is that the char/sprite will be floating in air in a cliff and as levels goes up u can see the time(most hardest) decreases
+    {"level": 2, "time": 8, "gravity": 1000, "max_safe_vy": 380, "fluid_rho": 1.15, "wind_x": 35, "cliff_height": 460, "drop_y": 180}, # copy pasted from last line 
+    {"level": 3, "time": 5, "gravity": 1200, "max_safe_vy": 340, "fluid_rho": 1.3, "wind_x": -55, "cliff_height": 580, "drop_y": 100}, 
 ] 
 GROUND_Y = HEIGHT - 60
-DROP_START_X = 340 #ugghh ofc i have to use pycase not snakecase its of i have to have caps lock on evry timr
+DROP_START_X = 640 #ugghh ofc i have to use pycase not snakecase its of i have to have caps lock on evry timr
 DROP_START_Y = 150
 DRAW_RADIUS = 160
 def load_transparent_asset(filename, size, fallback_color):
