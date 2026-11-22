@@ -53,7 +53,7 @@ def spawn_clouds(count=7):
         clouds.append({
             "surf": make_random_cloud(scale),
             "x":  float(random.randint(-120, WIDTH + 120)),
-            "y": float(random.randint(30, 320)),
+            "y": float(random.randint(250, 410)),
             "speed": random.uniform(12, 35) * random.choice([-1, 1]),
         }) 
     return clouds
@@ -274,6 +274,8 @@ while running:
     for c in clouds:
         screen.blit(c["surf"], (int(c["x"]), int(c["y"])))
     pygame.draw.rect(screen, (65, 150, 75), (0, GROUND_Y, WIDTH, HEIGHT - GROUND_Y))
+    cliff_scale = cfg["cliff_height"] / cliff_img.get_height()
+    cliff_w = int(cliff_img.get_width() * cliff_scale)
     scaled_cliff = pygame.transform.smoothscale(cliff_img, (320, cfg["cliff_height"]))
     cliff_rect = scaled_cliff.get_rect(bottomright=(DROP_START_X - 32, GROUND_Y))
     screen.blit(scaled_cliff, cliff_rect)
