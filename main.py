@@ -200,16 +200,25 @@ class Game:
         self.rig.links.clear()
         self.cam_y = max(0, self.player_y - 260) if self.player_y < 260 else max(0, self.player_y - 460)
     def update_camera(self, dt):
-        desired_cam_y = max(0, min(self.player_y - 220, GROUND_Y - HEIGHT + 140)) #140 seems k ig
+        top_cam_y = min(0, float(LEVELS[self.level_idx]["drop_y"]) - 260)
         if self.state == "DRAW":
-            desired_cam_y = max(0, self.player_y - 220)
-        self.cam_y += (desired_cam_y - self.cam_y) * min(1, dt * 6)
+            desired_cam_y = top_cam_y
+        else:
+            start_y = float(LEVELS[self.level_idx]["drop_y"]) # two things i have to think a lot now naming a variable and also juz coding atp
+            end_y = float(GROUND_Y - 32)
+            progress = max(0, min(1, (self.player_y - start_y) / max(1, end_y - start_y)))
+            desired_cam_y = top_cam_y * (1 - progress)
+        self.cam_y += (desired_cam_y - self.cam_y) * min(1, dt * 5)
     def start_drop(self):
         self.state = "DROP"
         self.is_drawing = False
         if len(self.current_stroke) > 1:
             self.strokes.append(self.current_stroke)
         self.current_stroke = []
+        self.strokes = [
+            s for s in self.strokes
+            if len(s) > 1 and math.hypot(s[0][0], s[0][1]) <= ANCHOR_RADIUS
+        ]
         self.drag_coeff, cushion, self.mass_factor, self.area_factor = compute_contraption_stats(self.strokes)
         self.safe_limit = LEVELS[self.level_idx]["max_safe_vy"] + cushion
         self.rig.build_from_strokes(self.strokes, self.player_x, self.player_y)
@@ -235,10 +244,12 @@ while running:
                 game.reset_level()
         elif game.state == "DRAW":
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1: #finally on to the MOUSE stuff always my fav
-                rel_pt = (event.pos[0] - game.player_x, event.pos[1] - game.player_y)
-                if math.hypot(rel_pt[0], rel_pt[1]) <= DRAW_RADIUS:
-                    game.is_drawing = True
-                    game.current_stroke = [rel_pt]
+                rel_pt = (
+                    event.pos[0] - game.player_x,
+                    event.pos[1] + game.cam_y - game.player_y,
+                )
+                dist_from_center = math.hypot(rel_pt[0], rel_pt[1])
+                
             elif event.type == pygame.MOUSEMOTION and game.is_drawing:
                 if pygame.mouse.get_pressed()[0]:
                     rel_pt = (event.pos[0] - game.player_x, event.pos[1] - game.player_y)
