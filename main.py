@@ -10,9 +10,9 @@ HEIGHT = 800 #not gonna do a config.py too lazy
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Cliffhanger is the name i could come up with")
 clock = pygame.time.Clock()
-FONT_BIG = pygame.font.SysFont("arial", 42, bold=True) #im sticking to arial(maybe times new roman) as im not experimenting with orbitron and all that shi
-FONT_MED = pygame.font.SysFont("arial", 25, bold=True) #maybe idk ill see
-FONT_SMALL = pygame.font.SysFont("arial", 18) #not bold
+FONT_BIG = pygame.font.SysFont("comicsansms", 42, bold=True) #im sticking to arial(maybe times new roman) as im not experimenting with orbitron and all that shi
+FONT_MED = pygame.font.SysFont("comicsansms", 25, bold=True) #maybe idk ill see alight i change to comicsansms arial seem too formally 
+FONT_SMALL = pygame.font.SysFont("comicsansms", 18) #not bold as small
 
 LEVELS = [
     {"level": 1, "time": 10, "gravity": 500, "max_safe_vy": 420, "fluid_rho": 1, "wind_x": 0, "cliff_height": 340, "drop_y": 240}, # ok so basically what ive done here is my idea is that the char/sprite will be floating in air in a cliff and as levels goes up u can see the time(most hardest) decreases
@@ -51,7 +51,7 @@ def spawn_clouds(count=7):
     for _ in range(count):
         scale = random.uniform(0.6, 1.5) #im juz using random ahh numbers which feel right
         clouds.append({
-            "suf": make_random_cloud(scale),
+            "surf": make_random_cloud(scale),
             "x":  float(random.randint(-120, WIDTH + 120)),
             "y": float(random.randint(30, 320)),
             "speed": random.uniform(12, 35) * random.choice([-1, 1]),
@@ -298,7 +298,7 @@ while running:
     if game.state == "DRAW":
         timer_color = (200, 30, 30) if game.time_left <= 3 else (20, 20, 20)
         timer_txt = FONT_BIG.render(f"go ahead and DRAW! {game.time_left:.1f}s", True, timer_color)
-        hint_txt = FONT_SMALL.render("drag mouse inside the ring to build you contraption and[space] for drop", True, (20, 20, 20))
+        hint_txt = FONT_SMALL.render("drag mouse inside the ring to build your random ahh structure and[space] for drop", True, (20, 20, 20))
         screen.blit(timer_txt, (WIDTH // 2 - timer_txt.get_width() // 2, 15))
         screen.blit(hint_txt, (WIDTH // 2 - hint_txt.get_width() // 2, 65))
     elif game.state == "DROP":
