@@ -313,7 +313,7 @@ while running:
     cliff_scale = cfg["cliff_height"] / cliff_img.get_height()
     cliff_w = int(cliff_img.get_width() * cliff_scale)
     scaled_cliff = pygame.transform.smoothscale(cliff_img, (cliff_w, cfg["cliff_height"]))
-    cliff_rect = scaled_cliff.get_rect(bottomright=(DROP_START_X - 32, ground_screen_y))
+    cliff_rect = scaled_cliff.get_rect(bottomright=(DROP_START_X + 152, ground_screen_y))
     screen.blit(scaled_cliff, cliff_rect)
     player_screen_x = int(game.player_x)
     player_screen_y = int(game.player_y - cam_y)
