@@ -35,17 +35,26 @@ cliff_img = load_transparent_asset("cliff.png", (320, 560), (95, 85, 80, 255))
 player_img = load_transparent_asset("sprite.jpeg", (64, 64), (255, 210, 80, 255))
 cloud_base_img = pygame.image.load("cloud.png").convert_alpha() if os.path.exists("cloud.png") else None #i included that os.path exists so that i can make clouds even if there isnt any file (include that in next lines) also i can finally put random to use
 def make_random_cloud(scale):
-    w = int(140 * scale)
-    h = int(60 * scale)
+    w = int(150 * scale)
+    h = int(64 * scale)
     if cloud_base_img:
         return pygame.transform.smoothscale(cloud_base_img, (w, h))
     surf = pygame.Surface((w, h), pygame.SRCALPHA)
-    puffs = random.randint(3, 6) #puffs is a fun name and finally rand
-    for _ in range(puffs): 
-        px = random.randint(int(w * 0.15), int(w * 0.85))
-        py = random.randint(int(h * 0.25), int(h * 0.75))
-        rad = random.randint(int(h * 0.25), int(h * 0.48))
-        pygame.draw.circle(surf, (255, 255, 255, random.randint(190, 245)), (px, py), rad)
+    body_h = max(14, int(h * 0.42))
+    body_y =  h - body_h - max(4, int(h * 0.08))
+    pygame.draw.rect(
+        surf,
+        (245, 250, 255, 235),
+        (int(w * 0.14), body_y, int(w * 0.72), body_h),
+        border_radius=max(6, body_h // 2),
+    )
+    puff_count = random.randint(3, 5)
+    for idx in range(puff_count):
+        t = (idx + 0.5) / puff_count
+        px = int(w * (0.22 + 0.56 * t))
+        py = int(body_y - random.randint(2, max(4, int(h * 0.12))))
+        rad = random.randint(max(10, int(h * 0.20)), max(14, int(h * 0.3)))
+        pygame.draw.circle(surf, (255, 255, 255, 240), (px, py), rad)
     return surf
 def spawn_clouds(count=7):
     clouds = []
@@ -215,10 +224,7 @@ class Game:
         if len(self.current_stroke) > 1:
             self.strokes.append(self.current_stroke)
         self.current_stroke = []
-        self.strokes = [
-            s for s in self.strokes
-            if len(s) > 1 and math.hypot(s[0][0], s[0][1]) <= ANCHOR_RADIUS
-        ]
+        self.strokes = [s for s in self.strokes if len(s) > 1]
         self.drag_coeff, cushion, self.mass_factor, self.area_factor = compute_contraption_stats(self.strokes)
         self.safe_limit = LEVELS[self.level_idx]["max_safe_vy"] + cushion
         self.rig.build_from_strokes(self.strokes, self.player_x, self.player_y)
@@ -249,10 +255,17 @@ while running:
                     event.pos[1] + game.cam_y - game.player_y,
                 )
                 dist_from_center = math.hypot(rel_pt[0], rel_pt[1])
-                
+                if dist_from_center <= DRAW_RADIUS:
+                    if dist_from_center <= ANCHOR_RADIUS:
+                        rel_pt = (0, 0)
+                    game.is_drawing = True
+                    game.current_stroke = [rel_pt]
             elif event.type == pygame.MOUSEMOTION and game.is_drawing:
                 if pygame.mouse.get_pressed()[0]:
-                    rel_pt = (event.pos[0] - game.player_x, event.pos[1] - game.player_y)
+                    rel_pt = (
+                        event.pos[0] - game.player_x,
+                        event.pos[1] + game.cam_y - game.player_y,
+                    )
                     if math.hypot(rel_pt[0], rel_pt[1]) <= DRAW_RADIUS:
                         game.current_stroke.append(rel_pt)
                     else:
