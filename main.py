@@ -135,6 +135,14 @@ class RigPhysics:
                 node.vy *= -0.25
                 node.vx *= 0.8
         for _ in range(3):
+            for i, j, rest in self.links:
+                a, b = self.nodes[i], self.nodes[j]
+                dx = b.x - a.x
+                dy = b.y - a.y
+                dist = math.hypot(dx, dy) or 10**-6
+                diff = (dist - rest) / dist * 0.5
+                
+                
 
 class Game:
     def __init__(self):
