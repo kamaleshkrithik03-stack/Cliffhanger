@@ -15,9 +15,9 @@ FONT_MED = pygame.font.SysFont("comicsansms", 25, bold=True) #maybe idk ill see 
 FONT_SMALL = pygame.font.SysFont("comicsansms", 18) #not bold as small
 
 LEVELS = [
-    {"level": 1, "time": 8, "gravity": 800, "max_safe_vy": 200, "fluid_rho": 1, "wind_x": 0, "cliff_height": 300, "drop_y": 240}, # ok so basically what ive done here is my idea is that the char/sprite will be floating in air in a cliff and as levels goes up u can see the time(most hardest) decreases
-    {"level": 2, "time": 5, "gravity": 1000, "max_safe_vy": 150, "fluid_rho": 1.15, "wind_x": 35, "cliff_height": 600, "drop_y": 180}, # copy pasted from last line 
-    {"level": 3, "time": 2, "gravity": 1200, "max_safe_vy": 100, "fluid_rho": 1.3, "wind_x": -55, "cliff_height": 900, "drop_y": 100}, 
+    {"level": 1, "time": 8, "gravity": 700, "max_safe_vy": 200, "fluid_rho": 1, "wind_x": 0, "cliff_height": 300, "drop_y": 240}, # ok so basically what ive done here is my idea is that the char/sprite will be floating in air in a cliff and as levels goes up u can see the time(most hardest) decreases
+    {"level": 2, "time": 5, "gravity": 800, "max_safe_vy": 180, "fluid_rho": 1.15, "wind_x": 35, "cliff_height": 600, "drop_y": 180}, # copy pasted from last line 
+    {"level": 3, "time": 2, "gravity": 900, "max_safe_vy": 140, "fluid_rho": 1.3, "wind_x": -55, "cliff_height": 900, "drop_y": 100}, 
 ] 
 GROUND_Y = HEIGHT - 60
 DROP_START_X = 640 #ugghh ofc i have to use pycase not snakecase its of i have to have caps lock on evry timr
@@ -283,17 +283,28 @@ while running:
     for c in clouds:
         screen.blit(c["surf"], (int(c["x"]), int(c["y"] - cam_y * 0.35)))
     ground_screen_y = int(GROUND_Y - cam_y)
-    
-    pygame.draw.rect(screen, (65, 150, 75), (0, GROUND_Y, WIDTH, HEIGHT - GROUND_Y))
+    if ground_screen_y < HEIGHT:
+        pygame.draw.rect(screen, (65, 150, 75), (0, ground_screen_y, WIDTH, HEIGHT - ground_screen_y))
     cliff_scale = cfg["cliff_height"] / cliff_img.get_height()
     cliff_w = int(cliff_img.get_width() * cliff_scale)
-    scaled_cliff = pygame.transform.smoothscale(cliff_img, (320, cfg["cliff_height"]))
-    cliff_rect = scaled_cliff.get_rect(bottomright=(DROP_START_X - 32, GROUND_Y))
+    scaled_cliff = pygame.transform.smoothscale(cliff_img, (cliff_w, cfg["cliff_height"]))
+    cliff_rect = scaled_cliff.get_rect(bottomright=(DROP_START_X - 32, ground_screen_y))
     screen.blit(scaled_cliff, cliff_rect)
+    player_screen_x = int(game.player_x)
+    player_screen_y = int(game.player_y - cam_y)
     if game.state == "DRAW":
-        pygame.draw.circle(
-            screen, (255, 255, 255), (int(game.player_x), int(game.player_y)), DRAW_RADIUS, 2
-        )
+        all_visible_strokes = game.strokes + ([game.current_stroke] if game.current_stroke else [])
+        for stroke in all_visible_strokes:
+            if len(stroke) > 1:
+                world_pts = [
+                    (game.player_x + dx, game.player_y + dy - cam_y)
+                    for dx, dy in stroke
+                ]
+                pygame.draw.lines(screen, (30, 30, 35), False, world_pts, 5)
+    else:
+        for i, j, _ in game.rig.links:
+            na, nb = game.rig.nodes[i], game.rig.nodes[j]
+            pygame.draw.line(screen, (30, 30, 35), (na.x, na.y - cam_y), (nb.x, nb.y - cam_y), 5) #im laughing my ahh off my letter choice here is "na" 
     sprite_rect = player_img.get_rect(center=(int(game.player_x), int(game.player_y)))
     screen.blit(player_img, sprite_rect)
     if game.state == "DRAW":
