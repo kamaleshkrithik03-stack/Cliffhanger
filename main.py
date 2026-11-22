@@ -182,7 +182,7 @@ class Game:
         self.state = "DRAW"
         self.time_left = float(cfg["time"])
         self.player_x = float(DROP_START_X)
-        self.player_y = float(DROP_START_Y)
+        self.player_y = float(cfg["drop_y"])
         self.vx = 0
         self.vy = 0.0
         self.strokes = []
@@ -263,9 +263,20 @@ while running:
             game.impact_speed = math.hypot(game.vx, game.vy)
             game.survived = game.impact_speed <= game.safe_limit
             game.state = "RESULT"
-    screen.fill((135, 200, 235)) #the best colour choice ig
+    for c in clouds:
+        c["x"] += (c["speed"] + cfg["wind_x"] * 0.4) * dt
+        cw = c["surf"].get_width()
+        if c["x"] > WIDTH + cw:
+            c["x"] = -cw
+        elif c["x"] < -cw:
+            c["x"] = WIDTH + cw
+    screen.fill((135, 200, 235)) #the best colour choice ig for a sky
+    for c in clouds:
+        screen.blit(c["surf"], (int(c["x"]), int(c["y"])))
     pygame.draw.rect(screen, (65, 150, 75), (0, GROUND_Y, WIDTH, HEIGHT - GROUND_Y))
-    screen.blit(cliff_img, (0, GROUND_Y - cliff_img.get_height()))
+    scaled_cliff = pygame.transform.smoothscale(cliff_img, (320, cfg["cliff_height"]))
+    cliff_rect = scaled_cliff.get_rect(bottomright=(DROP_START_X - 32, GROUND_Y))
+    screen.blit(scaled_cliff, cliff_rect)
     if game.state == "DRAW":
         pygame.draw.circle(
             screen, (255, 255, 255), (int(game.player_x), int(game.player_y)), DRAW_RADIUS, 2
