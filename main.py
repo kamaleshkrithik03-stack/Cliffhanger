@@ -23,6 +23,7 @@ GROUND_Y = HEIGHT - 60
 DROP_START_X = 640 #ugghh ofc i have to use pycase not snakecase its of i have to have caps lock on evry timr
 DROP_START_Y = 150
 DRAW_RADIUS = 160
+ANCHOR_RADIUS = 48
 def load_transparent_asset(filename, size, fallback_color):
     if os.path.exists(filename):
         img = pygame.image.load(filename).convert_alpha()
@@ -197,7 +198,7 @@ class Game:
         self.area_factor = 1
         self.rig.nodes.clear()
         self.rig.links.clear()
-        self.cam_y = max(0, self.player_y - 220)
+        self.cam_y = max(0, self.player_y - 260) if self.player_y < 260 else max(0, self.player_y - 460)
     def update_camera(self, dt):
         desired_cam_y = max(0, min(self.player_y - 220, GROUND_Y - HEIGHT + 140)) #140 seems k ig
         if self.state == "DRAW":
@@ -308,15 +309,9 @@ while running:
     sprite_rect = player_img.get_rect(center=(int(game.player_x), int(game.player_y)))
     screen.blit(player_img, sprite_rect)
     if game.state == "DRAW":
-        all_visible_strokes = game.strokes + ([game.current_stroke] if game.current_stroke else [])
-        for stroke in all_visible_strokes:
-            if len(stroke) > 1:
-                world_pts = [(game.player_x + dx, game.player_y + dy) for dx, dy in stroke]
-                pygame.draw.lines(screen, (30, 30, 35), False, world_pts, 5)
-    else:
-        for i, j, _ in game.rig.links:
-            na, nb = game.rig.nodes[i], game.rig.nodes[j]
-            pygame.draw.line(screen, (30, 30, 35), (na.x, na.y), (nb.x, nb.y), 5)
+        pygame.draw.circle(
+            screen, (255, 255, 255), (player_screen_x, player_screen_y), DRAW_RADIUS, 2
+        )
     lvl_txt = FONT_MED.render(f"level {cfg['level']} / {len(LEVELS)} | wind: {cfg['wind_x']:+.0f}", True, (20, 20, 20))
     screen.blit(lvl_txt, (20, 15))
     if game.state == "DRAW":
