@@ -46,7 +46,18 @@ def make_random_cloud(scale):
         rad = random.randint(int(h * 0.25), int(h * 0.48))
         pygame.draw.circle(surf, (255, 255, 255, random.randint(190, 245)), (px, py), rad)
     return surf
-
+def spawn_clouds(count=7):
+    clouds = []
+    for _ in range(count):
+        scale = random.uniform(0.6, 1.5) #im juz using random ahh numbers which feel right
+        clouds.append({
+            "suf": make_random_cloud(scale),
+            "x":  float(random.randint(-120, WIDTH + 120)),
+            "y": float(random.randint(30, 320)),
+            "speed": random.uniform(12, 35) * random.choice([-1, 1]),
+        }) 
+    return clouds
+clouds = spawn_clouds()
 def compute_contraption_stats(strokes):
     all_points = [pt for stroke in strokes for pt in stroke]
     if len(all_points) < 2:
