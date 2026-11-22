@@ -330,7 +330,7 @@ while running:
         for i, j, _ in game.rig.links:
             na, nb = game.rig.nodes[i], game.rig.nodes[j]
             pygame.draw.line(screen, (30, 30, 35), (na.x, na.y - cam_y), (nb.x, nb.y - cam_y), 5) #im laughing my ahh off my letter choice here is "na" 
-    sprite_rect = player_img.get_rect(center=(int(game.player_x), int(game.player_y)))
+    sprite_rect = player_img.get_rect(center=(player_screen_x, player_screen_y))
     screen.blit(player_img, sprite_rect)
     if game.state == "DRAW":
         pygame.draw.circle(
