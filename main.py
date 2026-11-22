@@ -141,38 +141,48 @@ class RigPhysics:
                 dy = b.y - a.y
                 dist = math.hypot(dx, dy) or 10**-6
                 diff = (dist - rest) / dist * 0.5
-                
-                
+                a.x += dx * diff
+                a.y += dy * diff
+                b.x -= dx * diff
+                b.y -= dy * diff
 
 class Game:
     def __init__(self):
         self.level_idx = 0
+        self.rig = RigPhysics()
         self.reset_level()
     def reset_level(self):
         cfg = LEVELS[self.level_idx]
         self.state = "DRAW"
-        self.time_left = cfg["time"]
+        self.time_left = float(cfg["time"])
         self.player_x = float(DROP_START_X)
         self.player_y = float(DROP_START_Y)
+        self.vx = 0
         self.vy = 0.0
         self.strokes = []
         self.current_stroke = []
         self.is_drawing = False
         self.survived = False
         self.impact_speed = 0
-        self.safe_limit = cfg["max_safe_vy"]
+        self.safe_limit = float(cfg["max_safe_vy"])
+        self.drag_coeff = 0
+        self.mass_factor = 1
+        self.area_factor = 1
+        self.rig.nodes.clear()
+        self.rig.links.clear()
     def start_drop(self):
         self.state = "DROP"
         self.is_drawing = False
-        if self.current_stroke:
+        if len(self.current_stroke) > 1:
             self.strokes.append(self.current_stroke)
-            self.current_stroke = []
-        self.drag, cushion, self.mass = compute_contraption_stats(self.strokes)
+        self.current_stroke = []
+        self.drag_coeff, cushion, self.mass_factor, self.area_factor = compute_contraption_stats(self.strokes)
         self.safe_limit = LEVELS[self.level_idx]["max_safe_vy"] + cushion
+        self.rig.build_from_strokes(self.strokes, self.player_x, self.player_y)
 game = Game()
 running = True
 while running:
-    dt = clock.tick(60) / 1000
+    dt = min(clock.tick(60) / 1000, 0.05)
     cfg = LEVELS[game.level_idx]
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -191,13 +201,25 @@ while running:
                 game.reset_level()
         elif game.state == "DRAW":
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1: #finally on to the MOUSE stuff always my fav
-                game.is_drawing = True
                 rel_pt = (event.pos[0] - game.player_x, event.pos[1] - game.player_y)
-                game.current_stroke = [rel_pt]
+                if math.hypot(rel_pt[0], rel_pt[1]) <= DRAW_RADIUS:
+                    game.is_drawing = True
+                    game.current_stroke = [rel_pt]
             elif event.type == pygame.MOUSEMOTION and game.is_drawing:
-                rel_pt = (event.pos[0] - game.player_x, event.pos[1] - game.player_y)
-                if math.hypot(rel_pt[0], rel_pt[1]) <= 160:
-                    game.current_stroke.append(rel_pt)
+                if pygame.mouse.get_pressed()[0]:
+                    rel_pt = (event.pos[0] - game.player_x, event.pos[1] - game.player_y)
+                    if math.hypot(rel_pt[0], rel_pt[1]) <= DRAW_RADIUS:
+                        game.current_stroke.append(rel_pt)
+                    else:
+                        game.is_drawing = False
+                        if len(game.current_stroke) > 1:
+                            game.strokes.append(game.current_stroke)
+                        game.current_stroke = []
+                else:
+                    game.is_drawing = False
+                    if len(game.current_stroke) > 1:
+                        game.strokes.append(game.current_stroke)
+                    game.current_stroke = []
             elif event.type == pygame.MOUSEBUTTONUP and event.button == 1 and game.is_drawing:
                 game.is_drawing = False
                 if len(game.current_stroke) > 1:
@@ -209,12 +231,10 @@ while running:
             game.time_left = 0
             game.start_drop()
     elif game.state == "DROP":
-        accel = (cfg["gravity"] * game.mass) - (game.drag * (game.vy ** 2))
-        game.vy += accel * dt
-        game.player_y += game.vy * dt
+        game.rig.step(dt, game, cfg)
         if game.player_y + 32 >= GROUND_Y:
             game.player_y = GROUND_Y - 32
-            game.impact_speed = game.vy
+            game.impact_speed = math.hypot(game.vx, game.vy)
             game.survived = game.impact_speed <= game.safe_limit
             game.state = "RESULT"
     screen.fill((135, 200, 235)) #the best colour choice ig
@@ -222,15 +242,20 @@ while running:
     screen.blit(cliff_img, (0, GROUND_Y - cliff_img.get_height()))
     if game.state == "DRAW":
         pygame.draw.circle(
-            screen, (255, 255, 255), (int(game.player_x), int(game.player_y)), 160, 2
+            screen, (255, 255, 255), (int(game.player_x), int(game.player_y)), DRAW_RADIUS, 2
         )
     sprite_rect = player_img.get_rect(center=(int(game.player_x), int(game.player_y)))
     screen.blit(player_img, sprite_rect)
-    all_visible_strokes = game.strokes + ([game.current_stroke] if game.current_stroke else [])
-    for stroke in all_visible_strokes:
-        if len(stroke) > 1:
-            world_pts = [(game.player_x + dx, game.player_y + dy) for dx, dy in stroke]
-            pygame.draw.lines(screen, (30, 30, 35), False, world_pts, 5)
+    if game.state == "DRAW":
+        all_visible_strokes = game.strokes + ([game.current_stroke] if game.current_stroke else [])
+        for stroke in all_visible_strokes:
+            if len(stroke) > 1:
+                world_pts = [(game.player_x + dx, game.player_y + dy) for dx, dy in stroke]
+                pygame.draw.lines(screen, (30, 30, 35), False, world_pts, 5)
+    else:
+        for i, j, _ in game.rig.links:
+            na, nb = game.rig.nodes[i], game.rig.nodes[j]
+            pygame.draw.line(screen, (30, 30, 35), (na.x, na.y), (nb.x, nb.y), 5)
     lvl_txt = FONT_MED.render(f"level {cfg['level']} / {len(LEVELS)}", True, (20, 20, 20))
     screen.blit(lvl_txt, (20, 15))
     if game.state == "DRAW":
