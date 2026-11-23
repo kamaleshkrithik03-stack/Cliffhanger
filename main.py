@@ -13,15 +13,16 @@ clock = pygame.time.Clock()
 FONT_BIG = pygame.font.SysFont("comicsansms", 42, bold=True) #im sticking to arial(maybe times new roman) as im not experimenting with orbitron and all that shi
 FONT_MED = pygame.font.SysFont("comicsansms", 25, bold=True) #maybe idk ill see alight i change to comicsansms arial seem too formally 
 FONT_SMALL = pygame.font.SysFont("comicsansms", 18) #not bold as small
-
-LEVELS = [
-    {"level": 1, "time": 8, "gravity": 700, "max_safe_vy": 200, "fluid_rho": 1, "wind_x": 0, "cliff_height": 300, "drop_y": 240}, # ok so basically what ive done here is my idea is that the char/sprite will be floating in air in a cliff and as levels goes up u can see the time(most hardest) decreases
-    {"level": 2, "time": 5, "gravity": 800, "max_safe_vy": 180, "fluid_rho": 1.15, "wind_x": 35, "cliff_height": 600, "drop_y": 180}, # copy pasted from last line 
-    {"level": 3, "time": 2, "gravity": 900, "max_safe_vy": 140, "fluid_rho": 1.3, "wind_x": -55, "cliff_height": 900, "drop_y": 100}, 
-] 
 GROUND_Y = HEIGHT - 60
+LEVELS = [
+    {"level": 1, "time": 8, "gravity": 700, "max_safe_vy": 200, "fluid_rho": 1, "wind_x": 0, "cliff_height": 300, "drop_y": GROUND_Y - 300 - 32}, # ok so basically what ive done here is my idea is that the char/sprite will be floating in air in a cliff and as levels goes up u can see the time(most hardest) decreases
+    {"level": 2, "time": 5, "gravity": 800, "max_safe_vy": 180, "fluid_rho": 1.15, "wind_x": 35, "cliff_height": 600, "drop_y": GROUND_Y - 520 - 32}, # copy pasted from last line 
+    {"level": 3, "time": 4, "gravity": 900, "max_safe_vy": 140, "fluid_rho": 1.3, "wind_x": -55, "cliff_height": 900, "drop_y": GROUND_Y - 720 - 32}, 
+] 
+
 DROP_START_X = 640 #ugghh ofc i have to use pycase not snakecase its of i have to have caps lock on evry timr
 DROP_START_Y = 150
+CLIFF_TOP_OFFSET = 60
 DRAW_RADIUS = 160
 ANCHOR_RADIUS = 48
 def load_transparent_asset(filename, size, fallback_color):
@@ -190,10 +191,17 @@ class Game:
         self.reset_level()
     def reset_level(self):
         cfg = LEVELS[self.level_idx]
-        self.state = "DRAW"
+        cliff_scale = cfg["cliff_height"] / cliff_img.get_height()
+        cliff_w = int(cliff_img.get_width() * cliff_scale)
+        self.cliff_left = float(DROP_START_X + 36)
+        self.cliff_right = float(self.cliff_left + cliff_w)
+        self.cliff_top = float(GROUND_Y - cfg["cliff_height"])
+        self.state = "READY"
+        self.run_dir = 0
         self.time_left = float(cfg["time"])
-        self.player_x = float(DROP_START_X)
-        self.player_y = float(cfg["drop_y"])
+        self.player_x = float(self.cliff_left + self.cliff_right) * 0.5
+        sprite_half_h = player_img.get_height() * 0.5
+        self.player_y = self.cliff_top - sprite_half_h + CLIFF_TOP_OFFSET
         self.vx = 0
         self.vy = 0.0
         self.strokes = []
@@ -207,14 +215,14 @@ class Game:
         self.area_factor = 1
         self.rig.nodes.clear()
         self.rig.links.clear()
-        self.cam_y = max(0, self.player_y - 260) if self.player_y < 260 else max(0, self.player_y - 460)
+        self.cam_y = float(min(0, float(cfg["drop_y"]) - 260))
     def update_camera(self, dt):
-        top_cam_y = min(0, float(LEVELS[self.level_idx]["drop_y"]) - 260)
-        if self.state == "DRAW":
+        top_cam_y = float(min(0, self.cliff_top - 260))
+        if self.state in ("READY", "DRAW", "RUNOFF"):
             desired_cam_y = top_cam_y
         else:
-            start_y = float(LEVELS[self.level_idx]["drop_y"]) # two things i have to think a lot now naming a variable and also juz coding atp
-            end_y = float(GROUND_Y - 32)
+            start_y = self.cliff_top - (player_img.get_height() * 0.5) # two things i have to think a lot now naming a variable and also juz coding atp
+            end_y = float(GROUND_Y - player_img.get_height() * 0.5)
             progress = max(0, min(1, (self.player_y - start_y) / max(1, end_y - start_y)))
             desired_cam_y = top_cam_y * (1 - progress)
         self.cam_y += (desired_cam_y - self.cam_y) * min(1, dt * 5)
@@ -237,7 +245,13 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE and game.state == "DRAW":
+            if event.key == pygame.K_a and game.state == "READY":
+                game.run_dir = -1
+                game.state = "RUNOFF"
+            elif event.key == pygame.K_s and game.state == "READY":
+                game.run_dir = 1
+                game.state = "RUNOFF"
+            elif event.key == pygame.K_SPACE and game.state == "DRAW":
                 game.start_drop()
             elif event.key == pygame.K_c and game.state == "DRAW":
                 game.strokes.clear()
@@ -283,7 +297,15 @@ while running:
                 if len(game.current_stroke) > 1:
                     game.strokes.append(game.current_stroke)
                 game.current_stroke = []
-    if game.state == "DRAW":
+    if game.state == "RUNOFF":
+        game.player_x += game.run_dir * 180 * dt
+        if game.run_dir > 0 and game.player_x >= game.cliff_right + 24:
+            game.player_x = game.cliff_right + 24
+            game.state = "DRAW"
+        elif game.run_dir < 0 and game.player_x <= game.cliff_left - 24:
+           game.player_x = game.cliff_left - 24
+           game.state = "DRAW" 
+    elif game.state == "DRAW":
         game.time_left -= dt
         if game.time_left <= 0:
             game.time_left = 0
@@ -313,7 +335,7 @@ while running:
     cliff_scale = cfg["cliff_height"] / cliff_img.get_height()
     cliff_w = int(cliff_img.get_width() * cliff_scale)
     scaled_cliff = pygame.transform.smoothscale(cliff_img, (cliff_w, cfg["cliff_height"]))
-    cliff_rect = scaled_cliff.get_rect(bottomright=(DROP_START_X + 152, ground_screen_y))
+    cliff_rect = scaled_cliff.get_rect(bottomleft=(int(game.cliff_left), ground_screen_y))
     screen.blit(scaled_cliff, cliff_rect)
     player_screen_x = int(game.player_x)
     player_screen_y = int(game.player_y - cam_y)
@@ -331,6 +353,8 @@ while running:
             na, nb = game.rig.nodes[i], game.rig.nodes[j]
             pygame.draw.line(screen, (30, 30, 35), (na.x, na.y - cam_y), (nb.x, nb.y - cam_y), 5) #im laughing my ahh off my letter choice here is "na" 
     sprite_rect = player_img.get_rect(center=(player_screen_x, player_screen_y))
+    if game.state in ("READY", "RUNOFF"):
+        sprite_rect.bottom = cliff_rect.top + CLIFF_TOP_OFFSET
     screen.blit(player_img, sprite_rect)
     if game.state == "DRAW":
         pygame.draw.circle(
