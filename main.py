@@ -15,11 +15,11 @@ FONT_MED = pygame.font.SysFont("comicsansms", 25, bold=True) #maybe idk ill see 
 FONT_SMALL = pygame.font.SysFont("comicsansms", 18) #not bold as small
 GROUND_Y = HEIGHT - 60
 LEVELS = [
-    {"level": 1, "time": 10, "gravity": 600, "max_safe_vy": 250, "fluid_rho": 1, "wind_x": 0, "cliff_height": 300, "drop_y": GROUND_Y - 300 - 32}, # ok so basically what ive done here is my idea is that the char/sprite will be floating in air in a cliff and as levels goes up u can see the time(most hardest) decreases
-    {"level": 2, "time": 8, "gravity": 700, "max_safe_vy": 230, "fluid_rho": 1.15, "wind_x": 35, "cliff_height": 600, "drop_y": GROUND_Y - 520 - 32}, # copy pasted from last line 
+    {"level": 1, "time": 10, "gravity": 600, "max_safe_vy": 210, "fluid_rho": 1, "wind_x": 0, "cliff_height": 300, "drop_y": GROUND_Y - 300 - 32}, # ok so basically what ive done here is my idea is that the char/sprite will be floating in air in a cliff and as levels goes up u can see the time(most hardest) decreases
+    {"level": 2, "time": 8, "gravity": 700, "max_safe_vy": 205, "fluid_rho": 1.15, "wind_x": 35, "cliff_height": 600, "drop_y": GROUND_Y - 520 - 32}, # copy pasted from last line 
     {"level": 3, "time": 9, "gravity": 800, "max_safe_vy": 200, "fluid_rho": 1.3, "wind_x": -55, "cliff_height": 900, "drop_y": GROUND_Y - 720 - 32}, 
-    {"level": 4, "time": 8, "gravity": 980, "max_safe_vy": 199, "fluid_rho": 1.35, "wind_x": 55, "cliff_height": 1000, "drop_y": GROUND_Y - 800 - 32}, # why 980 u ask cuz 980 looks like 9.8 irl
-    {"level": 5, "time": 7, "gravity": 1000, "max_safe_vy": 195, "fluid_rho": 1.40, "wind_x": -60, "cliff_height": 1100, "drop_y": GROUND_Y - 810 - 32},
+    {"level": 4, "time": 8, "gravity": 980, "max_safe_vy": 190, "fluid_rho": 1.35, "wind_x": 55, "cliff_height": 1000, "drop_y": GROUND_Y - 800 - 32}, # why 980 u ask cuz 980 looks like 9.8 irl
+    {"level": 5, "time": 7, "gravity": 1000, "max_safe_vy": 185, "fluid_rho": 1.40, "wind_x": -60, "cliff_height": 1100, "drop_y": GROUND_Y - 810 - 32},
     {"level": 6, "time": 5, "gravity": 1100, "max_safe_vy": 150, "fluid_rho": 1.45, "wind_x": 60, "cliff_height": 2000, "drop_y": GROUND_Y - 830 - 32},
 ] 
 
@@ -196,7 +196,8 @@ class Game:
     def reset_level(self):
         cfg = LEVELS[self.level_idx]
         cliff_scale = cfg["cliff_height"] / cliff_img.get_height()
-        cliff_w = int(cliff_img.get_width() * cliff_scale)
+        vis_scale = min(1.0, 560 / cliff_img.get_height(), 260 / cliff_img.get_width())
+        cliff_w = int(cliff_img.get_width() * vis_scale)
         self.cliff_left = float(DROP_START_X + 36)
         self.cliff_right = float(self.cliff_left + cliff_w)
         self.cliff_top = float(GROUND_Y - cfg["cliff_height"])
@@ -208,6 +209,7 @@ class Game:
         self.player_y = self.cliff_top - sprite_half_h + CLIFF_TOP_OFFSET
         self.vx = 0
         self.vy = 0.0
+        self.shake_timer = 0
         self.strokes = []
         self.current_stroke = []
         self.is_drawing = False
@@ -333,26 +335,34 @@ while running:
     screen.fill((135, 200, 235)) #the best colour choice ig for a sky
     for c in clouds:
         screen.blit(c["surf"], (int(c["x"]), int(c["y"] - cam_y * 0.35)))
+    if abs(cfg["wind_x"]) > 0:
+        streak_dir = 1 if cfg["wind_x"] > 0 else -1
+        for i in range(6):
+            wx = int(((pygame.time.get_ticks() * 0.25 * streak_dir * (1 + abs(cfg["wind_x"]) / 60) + i * 210) % (WIDTH + 120)) - 60)
+            wy = int(110 + i * 75 - cam_y * 0.2)
+            pygame.draw.line(screen, (255, 255, 255), (wx, wy), (wx + streak_dir * 38, wy), 2)
     ground_screen_y = int(GROUND_Y - cam_y)
     if ground_screen_y < HEIGHT:
         pygame.draw.rect(screen, (65, 150, 75), (0, ground_screen_y, WIDTH, HEIGHT - ground_screen_y))
-    cliff_scale = cfg["cliff_height"] / cliff_img.get_height()
-    cliff_w = int(cliff_img.get_width() * cliff_scale)
-    scaled_cliff = pygame.transform.smoothscale(cliff_img, (cliff_w, cfg["cliff_height"]))
-    cliff_rect = scaled_cliff.get_rect(bottomleft=(int(game.cliff_left), ground_screen_y))
+    vis_scale = min(1.0, 560 / cliff_img.get_height(), 260 / cliff_img.get_width())
+    cliff_w = int(cliff_img.get_width() * vis_scale)
+    cliff_top_screen_y = int(game.cliff_top - cam_y)
+    cliff_draw_h = max(int(cliff_img.get_height() * vis_scale), ground_screen_y - cliff_top_screen_y)
+    scaled_cliff = pygame.transform.smoothscale(cliff_img, (cliff_w, cliff_draw_h))
+    cliff_rect = scaled_cliff.get_rect(topleft=(int(game.cliff_left), cliff_top_screen_y))
     screen.blit(scaled_cliff, cliff_rect)
     player_screen_x = int(game.player_x)
     player_screen_y = int(game.player_y - cam_y)
     
     if game.state == "DRAW":
         pygame.draw.circle(
-            screen, (255, 255, 255), (player_screen_x, player_screen_y),
+            screen, (255, 255, 255), (player_screen_x, player_screen_y), DRAW_RADIUS, 2
         )
         pygame.draw.circle(
-            screen, (255, 230, 120), (player_screen_x, player_screen_y),
+            screen, (255, 230, 120), (player_screen_x, player_screen_y), ANCHOR_RADIUS, 1
         )
         pygame.draw.circle(
-            screen, (255, 230, 120), (player_screen_x, player_screen_y),
+            screen, (255, 230, 120), (player_screen_x, player_screen_y), 4
         )
         all_visible_strokes = game.strokes + ([game.current_stroke] if game.current_stroke else [])
         for stroke in all_visible_strokes:
@@ -372,7 +382,12 @@ while running:
     screen.blit(player_img, sprite_rect)
     lvl_txt = FONT_MED.render(f"level {cfg['level']} / {len(LEVELS)} | wind: {cfg['wind_x']:+.0f}", True, (20, 20, 20))
     screen.blit(lvl_txt, (20, 15))
-    if game.state == "DRAW":
+    if game.state == "READY":
+        ready_txt = FONT_MED.render("press [a] run left or [s]  to go right", True, (20, 20, 20))
+        sub_txt = FONT_SMALL.render("pauses at ledge so u can draw |r to rest", True, (20, 20, 20))
+        screen.blit(ready_txt, (WIDTH // 2 - ready_txt.get_width() // 2 + 80, 15))
+        screen.blit(sub_txt, (WIDTH // 2 - sub_txt.get_width() // 2 + 80, 52))
+    elif game.state == "DRAW":
         timer_color = (200, 30, 30) if game.time_left <= 3 else (20, 20, 20)
         timer_txt = FONT_BIG.render(f"go ahead and DRAW! {game.time_left:.1f}s", True, timer_color)
         hint_txt = FONT_SMALL.render("drag mouse inside the ring to build your random ahh structure and[space] for drop", True, (20, 20, 20))
@@ -387,9 +402,13 @@ while running:
         res_txt = FONT_BIG.render(status, True, color)
         speed_txt = FONT_MED.render(
             f"impact speed(how far u screwed up): {int(game.impact_speed)} px/s  | safe limit was: {int(game.safe_limit)} px/s",
+            True,
+            (20, 20, 20),
         )
         rig_txt = FONT_SMALL.render(
             f"strokes: {len(game.strokes)} |drag: {game.drag_coeff:.4f} |area:{game.area_factor:.2f}x",
+            True,
+            (20, 20 ,20)
         )
         next_instruction = (
             "press enter for the next way more difficult levels or r to retry if u screwed up which u will"
