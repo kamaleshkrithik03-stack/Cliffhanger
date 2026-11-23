@@ -15,9 +15,12 @@ FONT_MED = pygame.font.SysFont("comicsansms", 25, bold=True) #maybe idk ill see 
 FONT_SMALL = pygame.font.SysFont("comicsansms", 18) #not bold as small
 GROUND_Y = HEIGHT - 60
 LEVELS = [
-    {"level": 1, "time": 8, "gravity": 700, "max_safe_vy": 200, "fluid_rho": 1, "wind_x": 0, "cliff_height": 300, "drop_y": GROUND_Y - 300 - 32}, # ok so basically what ive done here is my idea is that the char/sprite will be floating in air in a cliff and as levels goes up u can see the time(most hardest) decreases
-    {"level": 2, "time": 5, "gravity": 800, "max_safe_vy": 180, "fluid_rho": 1.15, "wind_x": 35, "cliff_height": 600, "drop_y": GROUND_Y - 520 - 32}, # copy pasted from last line 
-    {"level": 3, "time": 4, "gravity": 900, "max_safe_vy": 140, "fluid_rho": 1.3, "wind_x": -55, "cliff_height": 900, "drop_y": GROUND_Y - 720 - 32}, 
+    {"level": 1, "time": 10, "gravity": 600, "max_safe_vy": 250, "fluid_rho": 1, "wind_x": 0, "cliff_height": 300, "drop_y": GROUND_Y - 300 - 32}, # ok so basically what ive done here is my idea is that the char/sprite will be floating in air in a cliff and as levels goes up u can see the time(most hardest) decreases
+    {"level": 2, "time": 8, "gravity": 700, "max_safe_vy": 230, "fluid_rho": 1.15, "wind_x": 35, "cliff_height": 600, "drop_y": GROUND_Y - 520 - 32}, # copy pasted from last line 
+    {"level": 3, "time": 9, "gravity": 800, "max_safe_vy": 200, "fluid_rho": 1.3, "wind_x": -55, "cliff_height": 900, "drop_y": GROUND_Y - 720 - 32}, 
+    {"level": 4, "time": 8, "gravity": 980, "max_safe_vy": 199, "fluid_rho": 1.35, "wind_x": 55, "cliff_height": 1000, "drop_y": GROUND_Y - 800 - 32}, # why 980 u ask cuz 980 looks like 9.8 irl
+    {"level": 5, "time": 7, "gravity": 1000, "max_safe_vy": 195, "fluid_rho": 1.40, "wind_x": -60, "cliff_height": 1100, "drop_y": GROUND_Y - 810 - 32},
+    {"level": 6, "time": 5, "gravity": 1100, "max_safe_vy": 150, "fluid_rho": 1.45, "wind_x": 60, "cliff_height": 2000, "drop_y": GROUND_Y - 830 - 32},
 ] 
 
 DROP_START_X = 640 #ugghh ofc i have to use pycase not snakecase its of i have to have caps lock on evry timr
@@ -34,6 +37,7 @@ def load_transparent_asset(filename, size, fallback_color):
     return surf
 cliff_img = load_transparent_asset("cliff.png", (320, 560), (95, 85, 80, 255))
 player_img = load_transparent_asset("sprite.jpeg", (64, 64), (255, 210, 80, 255))
+player_img_left = pygame.transform.flip(player_img, True, False)
 cloud_base_img = pygame.image.load("cloud.png").convert_alpha() if os.path.exists("cloud.png") else None #i included that os.path exists so that i can make clouds even if there isnt any file (include that in next lines) also i can finally put random to use
 def make_random_cloud(scale):
     w = int(150 * scale)
@@ -339,6 +343,7 @@ while running:
     screen.blit(scaled_cliff, cliff_rect)
     player_screen_x = int(game.player_x)
     player_screen_y = int(game.player_y - cam_y)
+    
     if game.state == "DRAW":
         all_visible_strokes = game.strokes + ([game.current_stroke] if game.current_stroke else [])
         for stroke in all_visible_strokes:
@@ -375,16 +380,30 @@ while running:
         status = "survived!" if game.survived else "splat! womp womp"
         color = (20, 140, 40) if game.survived else (200, 30, 30)
         res_txt = FONT_BIG.render(status, True, color)
-        detail_txt = FONT_MED.render(
-            f"impact: {int(game.impact_speed)} px/s |    safelimit: {int(game.safe_limit)} px/s",
-            True,
-            (20, 20, 20),
+        speed_txt = FONT_MED.render(
+            f"impact speed(how far u screwed up): {int(game.impact_speed)} px/s  | safe limit was: {int(game.safe_limit)} px/s",
         )
-        next_instruction = "press [enter] for next level " if game.survived else "press r to retry"
-        instruction_txt = FONT_SMALL.render(next_instruction, True, (20, 20, 20))
-        screen.blit(res_txt, (WIDTH // 2 - res_txt.get_width() // 2, 180))
-        screen.blit(detail_txt, (WIDTH // 2 - detail_txt.get_width() // 2, 235))
-        screen.blit(instruction_txt, (WIDTH // 2 - instruction_txt.get_width() // 2, 275)) #ok im writing instruction as prompt as thats the lalternative ugghh dont ask why i chose instruction over prompt
+        rig_txt = FONT_SMALL.render(
+            f"strokes: {len(game.strokes)} |drag: {game.drag_coeff:.4f} |area:{game.area_factor:.2f}x",
+        )
+        next_instruction = (
+            "press enter for the next way more difficult levels or r to retry if u screwed up which u will"
+            if game.survived
+            else "press r to retry"
+        )
+        instruction_txt = FONT_SMALL.render(next_instruction, True, (20, 20, 20)) #ok im writing instruction as prompt as thats the lalternative ugghh dont ask why i chose instruction over prompt
+        panel_w, panel_h = 560, 175
+        panel_x = WIDTH // 2 - panel_w // 2
+        panel_y = 165
+        panel_surf = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
+        pygame.draw.rect(panel_surf, (255, 255, 255, 205), (0, 0, panel_w, panel_h), border_radius=14)
+        pygame.draw.rect(panel_surf, color, (0, 0, panel_w, panel_h), width=3, border_radius=14)
+        screen.blit(panel_surf, (panel_x, panel_y))
+        screen.blit(res_txt, (WIDTH // 2 - res_txt.get_width() // 2, panel_y + 12))
+        screen.blit(speed_txt, (WIDTH // 2 - speed_txt.get_width() // 2, panel_y + 67))
+        screen.blit(rig_txt, (WIDTH // 2 - rig_txt.get_width() // 2, panel_y + 107))
+        screen.blit(instruction_txt, (WIDTH // 2 - instruction_txt.get_width() // 2, panel_y + 137))
+        
     pygame.display.flip()
 pygame.quit()
 
