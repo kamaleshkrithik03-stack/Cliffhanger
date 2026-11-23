@@ -89,10 +89,10 @@ def compute_contraption_stats(strokes):
             total_length += math.hypot(dx, dy)#as usual we see pythagoras
 
     
-    cushion_bonus = min(5, total_length * 0.18 + (span_y * 0.25))
-    drag_coeff = min(0.0065, span_x * 0.000024 + total_length * 0.000003) # copy pasted cuz idk this formula but it is drag coeficient
-    area_factor = min(3.5, 0.5 + span_x / 90 + total_length / 500)
-    mass_factor = 1.0 + min(0.35, total_length * 0.00015)
+    cushion_bonus = min(85, span_y * 0.45 + total_length * 0.06)
+    drag_coeff = min(0.014, span_x * 0.000045 + total_length * 0.000004) # copy pasted cuz idk this formula but it is drag coeficient
+    area_factor = min(4.5, 0.5 + span_x / 65 + total_length / 400)
+    mass_factor = 1.0 + min(0.45, total_length * 0.0002)
     return drag_coeff, cushion_bonus, mass_factor, area_factor
 class PhysicsNode: #new word node unlocked from godot
     def __init__(self, ox, oy, px, py):
@@ -345,6 +345,15 @@ while running:
     player_screen_y = int(game.player_y - cam_y)
     
     if game.state == "DRAW":
+        pygame.draw.circle(
+            screen, (255, 255, 255), (player_screen_x, player_screen_y),
+        )
+        pygame.draw.circle(
+            screen, (255, 230, 120), (player_screen_x, player_screen_y),
+        )
+        pygame.draw.circle(
+            screen, (255, 230, 120), (player_screen_x, player_screen_y),
+        )
         all_visible_strokes = game.strokes + ([game.current_stroke] if game.current_stroke else [])
         for stroke in all_visible_strokes:
             if len(stroke) > 1:
@@ -361,10 +370,6 @@ while running:
     if game.state in ("READY", "RUNOFF"):
         sprite_rect.bottom = cliff_rect.top + CLIFF_TOP_OFFSET
     screen.blit(player_img, sprite_rect)
-    if game.state == "DRAW":
-        pygame.draw.circle(
-            screen, (255, 255, 255), (player_screen_x, player_screen_y), DRAW_RADIUS, 2
-        )
     lvl_txt = FONT_MED.render(f"level {cfg['level']} / {len(LEVELS)} | wind: {cfg['wind_x']:+.0f}", True, (20, 20, 20))
     screen.blit(lvl_txt, (20, 15))
     if game.state == "DRAW":
@@ -402,8 +407,7 @@ while running:
         screen.blit(res_txt, (WIDTH // 2 - res_txt.get_width() // 2, panel_y + 12))
         screen.blit(speed_txt, (WIDTH // 2 - speed_txt.get_width() // 2, panel_y + 67))
         screen.blit(rig_txt, (WIDTH // 2 - rig_txt.get_width() // 2, panel_y + 107))
-        screen.blit(instruction_txt, (WIDTH // 2 - instruction_txt.get_width() // 2, panel_y + 137))
-        
+        screen.blit(instruction_txt, (WIDTH // 2 - instruction_txt.get_width() // 2, panel_y + 137)) 
     pygame.display.flip()
 pygame.quit()
 
